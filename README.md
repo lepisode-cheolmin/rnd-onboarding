@@ -13,15 +13,15 @@
 ├── src/rnd_onboarding/             # 설치형 패키지 (uv sync 시 editable 설치)
 │   ├── schemas.py                  # 공통 Pydantic 스키마 (Movie, BoxOffice)
 │   └── prompts/__init__.py         # 버전별 프롬프트 레지스트리 (v1, v2)
-├── notebooks/
-│   ├── 01_openai_version.ipynb     # 영화 정보 - OpenAI 버전 (검색+구조화 단일 호출)
-│   ├── 02_langchain_version.ipynb  # 영화 정보 - LangChain 버전 (검색 → 구조화 2단계 체인)
-│   └── 03_boxoffice.ipynb          # 한국 박스오피스 순위 - 중첩 리스트+출처 구조화 (두 클라이언트)
-├── scripts/build_notebooks.py      # 노트북 재생성 스크립트
+├── notebooks/                      # .ipynb 와 .py(percent) 가 jupytext 로 페어링됨
+│   ├── 01_openai_version.{ipynb,py}    # 영화 정보 - OpenAI (검색+구조화 단일 호출)
+│   ├── 02_langchain_version.{ipynb,py} # 영화 정보 - LangChain (검색 → 구조화 2단계 체인)
+│   └── 03_boxoffice.{ipynb,py}         # 한국 박스오피스 순위 - 중첩 리스트+출처 구조화
 └── docs/                           # 계획/의사결정/학습 문서
 ```
 
-> 노트북은 `from rnd_onboarding.schemas import Movie` 처럼 **설치된 패키지로 import** 한다 (sys.path 조작 불필요).
+> - 노트북은 `from rnd_onboarding.schemas import Movie` 처럼 **설치된 패키지로 import** 한다 (sys.path 조작 불필요).
+> - 노트북은 **jupytext** 로 관리한다: `.py`(percent) 가 **코드 source**(깔끔한 diff·에디터 편집), `.ipynb` 는 **실행 결과(출력)** 보관. 한쪽을 고치면 `uv run jupytext --sync notebooks/*.ipynb` 로 동기화.
 
 ## 빠른 시작
 
