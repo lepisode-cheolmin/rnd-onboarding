@@ -41,7 +41,19 @@
   ... (PerplexityBot, Google-Extended, CCBot 등 동일)
   ```
 - `www.naver.com/robots.txt` → 홈(`/$`) 외 전부 `Disallow`.
-- **결론:** 네이버 스크래핑/검색은 robots.txt 위반이며, AI 용도는 명시적으로 금지됨 → 과제 소스로 부적합.
+
+**보충 — 서브도메인 전수 확인 (2026-06-16):** `blog`/`news`/`cafe` 까지 모두 AI 봇을 차단했다.
+
+| 도메인 | 일반 크롤러(`*`) | AI 봇(OAI-SearchBot/GPTBot 등) | web_search 사용 |
+| --- | --- | --- | --- |
+| `news.naver.com` | `Disallow: /` 전면 차단 (페북/트위터 미리보기만 허용) | 명시 차단 | ❌ |
+| `cafe.naver.com` | `Disallow: /` 전면 차단 | 명시 차단 | ❌ |
+| `blog.naver.com` | 일부 동적 endpoint만 차단, **게시글 본문은 허용** | 명시 차단 | ❌ |
+| `m.blog.naver.com` | 본문 허용(특정 endpoint 차단) | 명시 차단 | ❌ |
+
+- 모든 서브도메인 robots.txt 상단에 동일한 `# ... AI TRAINING AND RAG IS STRICTLY PROHIBITED` 블록 + `OAI-SearchBot/GPTBot/ClaudeBot/PerplexityBot/Google-Extended/CCBot ... Disallow: /`.
+- 핵심: `blog.naver` 처럼 **일반 검색엔진엔 본문을 열어주는 곳도 AI 봇만 콕 집어 차단**한다 = "사람용 검색은 허용, AI 검색/RAG는 거부"가 네이버의 일관된 정책.
+- **결론:** 네이버 스크래핑/검색은 robots.txt 위반이며 AI 용도는 명시적으로 금지됨. **`blog`/`news` 포함 네이버 전 도메인을 web_search 소스에서 제외**한다 → 과제 소스로 부적합.
 
 ### 근거 2 — TMDB가 요구 필드를 전부 충족
 - 공식 무료 API, 한국어(`language=ko-KR`) 지원.

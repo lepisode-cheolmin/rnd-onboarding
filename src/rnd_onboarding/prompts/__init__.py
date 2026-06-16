@@ -32,9 +32,43 @@ _PROMPTS: dict[str, dict[str, object]] = {
 }
 
 
+_BOXOFFICE_PROMPTS: dict[str, dict[str, object]] = {
+    # v1: 최소 지시
+    "v1": {
+        "system": "You extract the current box office ranking into structured data.",
+        "user": Template("현재 대한민국 박스오피스 1위부터 $n위까지를 구조화하라.$context"),
+    },
+    # v2: KOBIS 우선, 기준일/출처 강제
+    "v2": {
+        "system": (
+            "당신은 한국 박스오피스 데이터를 구조화하는 큐레이터다. 웹에서 찾은 사실만 근거로 사용하고 "
+            "추측하지 마라. 가능하면 영화진흥위원회(KOBIS) 기반 데이터를 우선 사용한다. "
+            "entries 는 rank 오름차순, as_of_date(기준일)와 sources(실제 참고 URL)를 반드시 채운다."
+        ),
+        "user": Template(
+            "현재 대한민국 영화 박스오피스 순위 1위부터 $n위까지를 구조화해줘.\n"
+            "- 제목은 한국어\n"
+            "- sources 에는 실제로 참고한 URL 을 넣을 것$context"
+        ),
+    },
+}
+
+
 def list_versions() -> list[str]:
     """등록된 프롬프트 버전 목록."""
     return list(_PROMPTS)
+
+
+def render_boxoffice(version: str, n: int = 10, findings: str = "") -> dict[str, str]:
+    """박스오피스 프롬프트 렌더링. findings 가 있으면 [검색 결과] 블록을 덧붙인다."""
+    if version not in _BOXOFFICE_PROMPTS:
+        raise KeyError(f"알 수 없는 프롬프트 버전: {version}. 가능: {list(_BOXOFFICE_PROMPTS)}")
+    p = _BOXOFFICE_PROMPTS[version]
+    context = f"\n\n[검색 결과]\n{findings}" if findings else ""
+    return {
+        "system": p["system"],
+        "user": p["user"].substitute(n=n, context=context),
+    }
 
 
 def render(version: str, title: str, findings: str = "") -> dict[str, str]:

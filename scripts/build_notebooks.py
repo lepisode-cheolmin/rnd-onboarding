@@ -17,15 +17,14 @@ NB_DIR.mkdir(exist_ok=True)
 
 # 공통: 경로/환경 설정 셀
 SETUP = '''\
-import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 프로젝트 루트(schemas.py 가 있는 곳)를 import 경로에 추가
+# .env 로드를 위해 프로젝트 루트 찾기 (pyproject.toml 기준).
+# rnd_onboarding 패키지는 설치돼 있어 import 경로 조작은 불필요하다.
 ROOT = Path.cwd()
-if not (ROOT / "schemas.py").exists():
+if not (ROOT / "pyproject.toml").exists():
     ROOT = ROOT.parent
-sys.path.insert(0, str(ROOT))
 load_dotenv(ROOT / ".env")
 
 TITLE = "인터스텔라"  # ← 원하는 영화 제목으로 변경
@@ -54,8 +53,8 @@ def build_openai():
         ),
         nbf.v4.new_code_cell(
             'from openai import OpenAI\n'
-            'import prompts\n'
-            'from schemas import Movie\n\n'
+            'from rnd_onboarding import prompts\n'
+            'from rnd_onboarding.schemas import Movie\n\n'
             'client = OpenAI()\n\n'
             'msgs = prompts.render("v2", TITLE)  # findings 없음 → 모델이 web_search 로 직접 검색\n'
             'resp = client.responses.parse(\n'
@@ -122,15 +121,15 @@ def build_langchain():
         ),
         nbf.v4.new_code_cell(
             'from langchain_openai import ChatOpenAI\n'
-            'import prompts\n'
-            'from schemas import Movie\n\n\n'
+            'from rnd_onboarding import prompts\n'
+            'from rnd_onboarding.schemas import Movie\n\n\n'
             'def as_text(msg):\n'
             '    """AIMessage.content(문자열 또는 블록 리스트)를 평범한 텍스트로 변환."""\n'
-            '    c = msg.content\n'
-            '    if isinstance(c, str):\n'
-            '        return c\n'
-            '    parts = [b.get("text", "") if isinstance(b, dict) else str(b) for b in c]\n'
-            '    return "\\n".join(p for p in parts if p)\n\n\n'
+            '    content = msg.content\n'
+            '    if isinstance(content, str):\n'
+            '        return content\n'
+            '    parts = [block.get("text", "") if isinstance(block, dict) else str(block) for block in content]\n'
+            '    return "\\n".join(part for part in parts if part)\n\n\n'
             'search_llm = ChatOpenAI(\n'
             '    model=MODEL, use_responses_api=True, reasoning_effort=EFFORT\n'
             ').bind_tools([{"type": "web_search"}])\n'
@@ -180,7 +179,99 @@ def build_langchain():
     nbf.write(nb, NB_DIR / "02_langchain_version.ipynb")
 
 
+def build_boxoffice():
+    """박스오피스 순위(중첩 리스트 + 출처)를 두 클라이언트로 구조화하는 노트북."""
+    nb = nbf.v4.new_notebook()
+    setup = (
+        'from pathlib import Path\n'
+        'from dotenv import load_dotenv\n\n'
+        '# .env 로드를 위해 루트 찾기 (rnd_onboarding 패키지는 설치돼 있어 import 경로 조작 불필요)\n'
+        'ROOT = Path.cwd()\n'
+        'if not (ROOT / "pyproject.toml").exists():\n'
+        '    ROOT = ROOT.parent\n'
+        'load_dotenv(ROOT / ".env")\n\n'
+        'MODEL = "gpt-5.4-nano"\n'
+        'EFFORT = "low"\n'
+        'N = 10  # 1위~N위\n'
+        'print("ROOT:", ROOT, "| MODEL:", MODEL, "| TOP", N)'
+    )
+    cells = [
+        nbf.v4.new_markdown_cell(
+            "# 한국 박스오피스 순위 — 구조화 출력\n\n"
+            "비정형 웹 검색 결과를 **순위 리스트 + 출처 URL**(`BoxOffice` 스키마)로 구조화한다.\n"
+            "OpenAI / LangChain 두 버전 모두 web_search 로 검색한다.\n\n"
+            "> ⚠️ 이 프로젝트의 목표는 **정확도가 아니라 \"비정형 → structured output\"**.\n"
+            "> 네이버는 robots.txt 로 AI 봇을 차단하므로 사용하지 않고, KOBIS 기반 2차 출처에서 가져온다\n"
+            "> (출처는 `sources` 에 그대로 노출해 투명하게 둔다). 자세한 근거는 `docs/DECISION.md` 참고."
+        ),
+        nbf.v4.new_markdown_cell("## 1. 환경 설정"),
+        nbf.v4.new_code_cell(setup),
+        nbf.v4.new_markdown_cell(
+            "## 2. OpenAI 버전 (web_search + 구조화 단일 호출)\n\n"
+            "`text_format=BoxOffice` 로 **중첩 리스트(entries)까지 한 번에** 구조화된다."
+        ),
+        nbf.v4.new_code_cell(
+            'from openai import OpenAI\n'
+            'from rnd_onboarding import prompts\n'
+            'from rnd_onboarding.schemas import BoxOffice\n\n'
+            'client = OpenAI()\n'
+            'msgs = prompts.render_boxoffice("v2", N)\n'
+            'resp = client.responses.parse(\n'
+            '    model=MODEL,\n'
+            '    tools=[{"type": "web_search"}],\n'
+            '    reasoning={"effort": EFFORT},\n'
+            '    input=[\n'
+            '        {"role": "system", "content": msgs["system"]},\n'
+            '        {"role": "user", "content": msgs["user"]},\n'
+            '    ],\n'
+            '    text_format=BoxOffice,\n'
+            ')\n'
+            'bo = resp.output_parsed\n'
+            'print(bo.pretty())'
+        ),
+        nbf.v4.new_markdown_cell(
+            "## 3. LangChain 버전 (검색 → 구조화 2단계 체인)"
+        ),
+        nbf.v4.new_code_cell(
+            'from langchain_openai import ChatOpenAI\n'
+            'from rnd_onboarding import prompts\n'
+            'from rnd_onboarding.schemas import BoxOffice\n\n\n'
+            'def as_text(msg):\n'
+            '    content = msg.content\n'
+            '    if isinstance(content, str):\n'
+            '        return content\n'
+            '    parts = [block.get("text", "") if isinstance(block, dict) else str(block) for block in content]\n'
+            '    return "\\n".join(part for part in parts if part)\n\n\n'
+            'search_llm = ChatOpenAI(\n'
+            '    model=MODEL, use_responses_api=True, reasoning_effort=EFFORT\n'
+            ').bind_tools([{"type": "web_search"}])\n'
+            'search_msg = search_llm.invoke(\n'
+            '    f"현재 대한민국 영화 박스오피스 1위부터 {N}위까지와 기준일, 출처 URL 을 "\n'
+            '    "웹에서 찾아 정리해줘. 영화진흥위원회(KOBIS) 기반 데이터를 우선 사용해."\n'
+            ')\n'
+            'findings = as_text(search_msg)\n\n'
+            'struct_llm = ChatOpenAI(model=MODEL, reasoning_effort=EFFORT).with_structured_output(BoxOffice)\n'
+            'msgs = prompts.render_boxoffice("v2", N, findings=findings)\n'
+            'bo = struct_llm.invoke([\n'
+            '    ("system", msgs["system"]),\n'
+            '    ("human", msgs["user"]),\n'
+            '])\n'
+            'print(bo.pretty())'
+        ),
+        nbf.v4.new_markdown_cell(
+            "## 4. 정리\n\n"
+            "- 비정형 검색 결과 → `BoxOffice`(중첩 리스트 `entries` + `sources`)로 구조화 성공.\n"
+            "- 두 클라이언트 모두 동일 스키마 사용. OpenAI 는 단일 호출, LangChain 은 2단계 체인.\n"
+            "- `sources` 로 출처를 노출 → 데이터 신뢰도를 투명하게 보여준다(정확도가 목적이 아님)."
+        ),
+    ]
+    nb.cells = cells
+    nb.metadata["language_info"] = {"name": "python"}
+    nbf.write(nb, NB_DIR / "03_boxoffice.ipynb")
+
+
 if __name__ == "__main__":
     build_openai()
     build_langchain()
+    build_boxoffice()
     print("notebooks generated:", [p.name for p in NB_DIR.glob("*.ipynb")])

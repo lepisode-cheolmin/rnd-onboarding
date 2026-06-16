@@ -64,8 +64,8 @@
 ## 5. 산출물 (Deliverables)
 - `notebooks/01_openai_version.ipynb` — OpenAI 클라이언트 버전
 - `notebooks/02_langchain_version.ipynb` — LangChain 클라이언트 버전
-- `schemas.py` — 공통 Pydantic 스키마(`Movie`)
-- `prompts/` — 구조화/버전 관리되는 프롬프트 템플릿
+- `src/rnd_onboarding/schemas.py` — 공통 Pydantic 스키마(`Movie`, `BoxOffice`)
+- `src/rnd_onboarding/prompts/` — 구조화/버전 관리되는 프롬프트 템플릿
 - `pyproject.toml`, `uv.lock` — uv 의존성 정의
 - `README.md` — 실행 방법 및 구현 설명
 - 본 `PLAN.md`
@@ -86,9 +86,9 @@
 
 ## 7. 구현 계획
 
-- [x] **7.1 공통 — Pydantic 스키마 (`Movie`)**: [schemas.py](../schemas.py)에 7개 필드 정의. 두 버전 공유. 검증 완료.
+- [x] **7.1 공통 — Pydantic 스키마 (`Movie`)**: [src/rnd_onboarding/schemas.py](../src/rnd_onboarding/schemas.py)에 7개 필드 정의. 두 버전 공유. 검증 완료.
 - [x] **7.2 데이터 검색**: OpenAI 내장 `web_search` 툴 사용 (각 노트북에 구현). 별도 모듈/키 불필요.
-- [x] **7.3 프롬프트 매니징**: [prompts/](../prompts/__init__.py)에 v1/v2 레지스트리 + `$title`/`$context` 템플릿. 렌더링 검증 완료.
+- [x] **7.3 프롬프트 매니징**: [src/rnd_onboarding/prompts/](../src/rnd_onboarding/prompts/__init__.py)에 v1/v2 레지스트리 + `$title`/`$context` 템플릿. 렌더링 검증 완료.
 - [x] **7.4 버전 A — OpenAI 클라이언트**: [notebooks/01_openai_version.ipynb](../notebooks/01_openai_version.ipynb) — `responses.parse(tools=[web_search], text_format=Movie)`. 구성 검증 완료, 실행은 키 필요 ⏳
 - [x] **7.5 버전 B — LangChain 클라이언트**: [notebooks/02_langchain_version.ipynb](../notebooks/02_langchain_version.ipynb) — `bind_tools([web_search])` → `with_structured_output(Movie)`. 구성 검증 완료, 실행은 키 필요 ⏳
 - [x] **7.6 비교 / 정리**: 각 노트북에 v1/v2 프롬프트 비교 + 정리 마크다운 셀 포함.

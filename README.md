@@ -10,14 +10,18 @@
 
 ```
 .
-├── schemas.py                      # 공통 Pydantic 스키마 (Movie)
-├── prompts/__init__.py             # 버전별 프롬프트 레지스트리 (v1, v2)
+├── src/rnd_onboarding/             # 설치형 패키지 (uv sync 시 editable 설치)
+│   ├── schemas.py                  # 공통 Pydantic 스키마 (Movie, BoxOffice)
+│   └── prompts/__init__.py         # 버전별 프롬프트 레지스트리 (v1, v2)
 ├── notebooks/
-│   ├── 01_openai_version.ipynb     # OpenAI 버전 (검색+구조화 단일 호출)
-│   └── 02_langchain_version.ipynb  # LangChain 버전 (검색 → 구조화 2단계 체인)
+│   ├── 01_openai_version.ipynb     # 영화 정보 - OpenAI 버전 (검색+구조화 단일 호출)
+│   ├── 02_langchain_version.ipynb  # 영화 정보 - LangChain 버전 (검색 → 구조화 2단계 체인)
+│   └── 03_boxoffice.ipynb          # 한국 박스오피스 순위 - 중첩 리스트+출처 구조화 (두 클라이언트)
 ├── scripts/build_notebooks.py      # 노트북 재생성 스크립트
 └── docs/                           # 계획/의사결정/학습 문서
 ```
+
+> 노트북은 `from rnd_onboarding.schemas import Movie` 처럼 **설치된 패키지로 import** 한다 (sys.path 조작 불필요).
 
 ## 빠른 시작
 
@@ -38,7 +42,7 @@ uv run jupyter lab
 
 ## 핵심 설계
 
-- **공통 스키마**: 두 버전이 동일한 `Movie`(영화명·개봉일·제작사·감독·출연·줄거리·평점)를 공유 → 결과 비교가 쉽다.
+- **공통 스키마**: 두 버전이 동일한 `Movie`(영화명·개봉일·제작사·감독·출연·줄거리·평점)를 공유 → 결과 비교가 쉽다. 박스오피스는 중첩 리스트(`BoxOffice.entries`) + 출처(`sources`) 스키마로 한 단계 더 복잡한 구조화를 시연한다.
 - **데이터 소스 = OpenAI 내장 web_search**: `OPENAI_API_KEY` 하나로 검색까지 처리, 별도 검색 키 불필요. 네이버는 robots.txt로 봇/AI 접근을 차단하므로 사용하지 않는다([DECISION.md](docs/DECISION.md) D-2/D-3).
 - **프롬프트 매니징**: `prompts` 모듈이 버전(v1, v2)을 관리하고 `$title`/`$context`(검색 결과) 변수를 주입한다.
 - **Structured Output**:
