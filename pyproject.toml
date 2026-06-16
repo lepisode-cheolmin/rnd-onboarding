@@ -27,8 +27,10 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/rnd_onboarding"]
 
+# NOTE: keep this file ASCII-only. jupytext reads it with the platform default
+# encoding (cp949 on Korean Windows), so non-ASCII here breaks `jupytext --sync`.
 [tool.jupytext]
-# 노트북(.ipynb)을 .py(percent 포맷)와 페어링한다.
-# .py 가 "코드 source"(깔끔한 diff·편집), .ipynb 는 실행 결과(출력) 보관.
-# 편집 후 동기화: uv run jupytext --sync notebooks/*.ipynb
+# Pair notebooks (.ipynb) with .py percent files: .py is the code source
+# (clean diffs / editor editing), .ipynb keeps execution outputs.
+# Sync after editing: uv run jupytext --sync notebooks/*.ipynb
 formats = "ipynb,py:percent"
